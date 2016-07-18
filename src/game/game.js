@@ -6,6 +6,7 @@
     var core = new Core();
     core.addSystem(new MovementSystem(core));
     core.addSystem(new RenderSystem(core));
+    core.addSystem(new InputSystem(core));
 
     var player = new Entity();
     player.add(new PositionComponent());

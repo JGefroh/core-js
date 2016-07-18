@@ -8,6 +8,7 @@ function Core() {
   var knownTags;
   var workInterval;
   var isPaused;
+  var handlersByMessageType;
 
 
   function initialize() {
@@ -16,6 +17,7 @@ function Core() {
     entitiesByTag = {};
     lastAssignedId = 0;
     knownTags = [];
+    handlersByMessageType = {};
   }
 
   function addEntity(entity) {
@@ -108,7 +110,6 @@ function Core() {
 
   function addSystem(system) {
     systems.push(system);
-    system.setCore(this);
   }
 
   function removeSystem(system) {
@@ -172,6 +173,26 @@ function Core() {
     }
   }
 
+  function send(messageType, payload) {
+    var handlersForMessage = handlersByMessageType[messageType];
+    if (handlersForMessage) {
+      for (var index = 0; index < handlersForMessage.length; index++) {
+        handlersForMessage[index](payload);
+      }
+    }
+  }
+
+  function addHandler(messageType, handler) {
+    var handlersForMessage = handlersByMessageType[messageType];
+    if (!handlersForMessage) {
+      handlersByMessageType[messageType] = [];
+      handlersForMessage = handlersByMessageType[messageType];
+    }
+    if (handlersForMessage.indexOf(handler) === -1) {
+      handlersForMessage.push(handler);
+    }
+  }
+
   initialize();
 
   return {
@@ -181,6 +202,8 @@ function Core() {
     start: start,
     stop: stop,
     getTaggedAs: getTaggedAs,
-    getTag: getTag
+    getTag: getTag,
+    send: send,
+    addHandler: addHandler
   };
 }

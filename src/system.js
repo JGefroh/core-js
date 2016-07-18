@@ -1,10 +1,6 @@
-function System() {
+function System(core) {
   var isStarted = false;
-  var _core;
-
-  this.setCore = function(core) {
-    _core = core;
-  };
+  var _core = core;
 
   this.start = function() {
     isStarted = true;
@@ -26,5 +22,13 @@ function System() {
 
   this.getTag = function(tagType) {
     return _core.getTag(tagType);
+  };
+
+  this.send = function(messageType, payload) {
+    _core.send(messageType, payload);
+  };
+
+  this.addHandler = function(messageType, handler) {
+    _core.addHandler(messageType, handler);
   };
 }
