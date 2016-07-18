@@ -108,7 +108,7 @@ function Core() {
 
   function addSystem(system) {
     systems.push(system);
-    system.start();
+    system.setCore(this);
   }
 
   function removeSystem(system) {

@@ -3,8 +3,8 @@
 })();
 
 
-function MovementSystem(core) {
-  System.call(this, core);
+function MovementSystem() {
+  System.call(this);
   var reverse = false;
 
   this.work = function() {
@@ -29,8 +29,8 @@ function MovementSystem(core) {
   };
 }
 
-function RenderSystem(core) {
-  System.call(this, core);
+function RenderSystem() {
+  System.call(this);
 
   this.work = function() {
     var renderable = this.getTag('Renderable');

@@ -1,6 +1,11 @@
-function System(core) {
+function System() {
   var isStarted = false;
-  var _core = core;
+  var _core;
+
+  this.setCore = function(core) {
+    _core = core;
+  };
+
   this.start = function() {
     isStarted = true;
   };
