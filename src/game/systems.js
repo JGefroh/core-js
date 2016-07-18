@@ -20,6 +20,7 @@ function InputSystem(core) {
     event.stopPropagation();
     event.preventDefault();
     fireAppropriateEvent(event);
+
   };
 
   window.onkeyup = function(event) {
@@ -74,12 +75,18 @@ function MovementSystem(core) {
   };
 }
 
+function DotSpawnSystem(core) {
+  System.call(this, core);
+}
+
 function RenderSystem(core) {
   System.call(this, core);
 
   this.work = function() {
     var renderable = this.getTag('Renderable');
     var canvasCtx = document.getElementById('canvas').getContext("2d");
+    canvasCtx.canvas.width  = window.innerWidth;
+    canvasCtx.canvas.height = window.innerHeight;
     canvasCtx.save();
     canvasCtx.fillStyle = "#FFFFFF";
     canvasCtx.clearRect(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);

@@ -9,6 +9,7 @@ function Core() {
   var workInterval;
   var isPaused;
   var handlersByMessageType;
+  var desiredFPS = 60;
 
 
   function initialize() {
@@ -117,11 +118,13 @@ function Core() {
   }
 
   function work() {
+    var t1 = performance.now();
     updateTimer();
     syncChangedEntities();
     for (var i = 0; i < systems.length; i++) {
       systems[i].work();
     }
+    var t2 = performance.now();
   }
 
   function syncChangedEntities() {
@@ -148,7 +151,7 @@ function Core() {
   }
 
   function updateTimer() {
-    var now = window.performance.now();
+    var now = performance.now();
     if (!isPaused) {
       var timePassed =  now - timeLastChecked;
       timer += timePassed;
@@ -157,8 +160,12 @@ function Core() {
   }
 
   function start() {
-    workInterval = window.setInterval(work, 16);
+    window.setTimeout(function() {
+      work();
+      start();
+    }, 1000 / desiredFPS);
   }
+
   function stop() {
     clearInterval(workInterval);
   }
