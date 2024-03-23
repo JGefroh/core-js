@@ -1,34 +1,38 @@
-function System(core) {
-  var isStarted = false;
-  var _core = core;
+import { default as Core } from '@core/core'
 
-  this.start = function() {
+export default class System {
+  constructor() {
+    this.isStarted = false;
+    this._core = Core;
+  }
+  
+  start() {
     isStarted = true;
   };
 
-  this.stop = function() {
+  stop() {
     isStarted = false;
   };
 
-  this.work = function() {
+  work() {
   };
 
-  this.forTaggedAs = function(tag, callback) {
-    var entities = _core.getTaggedAs(tag);
+  forTaggedAs(tag, callback) {
+    var entities = this._core.getTaggedAs(tag);
     for (var index = 0; index < entities.length; index++) {
       callback(entities[index]);
     }
   };
 
-  this.getTag = function(tagType) {
-    return _core.getTag(tagType);
+  getTag(tagType) {
+    return this._core.getTag(tagType);
   };
 
-  this.send = function(messageType, payload) {
-    _core.send(messageType, payload);
+  send(messageType, payload) {
+    this._core.send(messageType, payload);
   };
 
-  this.addHandler = function(messageType, handler) {
-    _core.addHandler(messageType, handler);
+  addHandler(messageType, handler) {
+    this._core.addHandler(messageType, handler);
   };
 }

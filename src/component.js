@@ -1,16 +1,18 @@
-function Component(typeName) {
-  var id = null;
-  var componentType = typeName;
+export default class Component {
+  constructor() {
+    this.id = null;
+    this.componentType = null;
+  }
 
-  this.getId = function() {
+  getId() {
     return this.id;
   };
 
-  this.setId = function(id) {
+  setId() {
     this.id = id;
   };
 
-  this.getComponentType = function() {
-    return componentType;
+  getComponentType() {
+    return this.componentType;
   };
 }

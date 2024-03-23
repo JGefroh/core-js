@@ -1,23 +1,25 @@
-function Tag(tagName) {
-  var id;
-  var tagType = tagName;
-  var entity;
-  this.getId = function() {
+export default class Tag {
+  constructor() {
+    this.id;
+    this.entity;
+    this.tagType;
+  }
+  getId() {
     return this.id;
   };
 
-  this.setId = function(id) {
+  setId(id) {
     this.id = id;
   };
 
-  this.isAssignableTo = function(entity) {
+  isAssignableTo(entity) {
   };
 
-  this.setEntity = function(entity) {
+  setEntity(entity) {
     this.entity = entity;
   };
 
-  this.getTagType = function() {
-    return tagType;
+  getTagType() {
+    return this.tagType;
   };
 }

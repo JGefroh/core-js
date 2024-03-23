@@ -1,77 +1,77 @@
-function Core() {
-  var systems;
-  var entitiesById;
-  var lastAssignedId;
-  var timer;
-  var timeLastChecked;
-  var entitiesByTag;
-  var knownTags;
-  var workInterval;
-  var isPaused;
-  var handlersByMessageType;
-  var desiredFPS = 60;
+class Core {
+  constructor() {
+    this.systems;
+    this.entitiesById;
+    this.lastAssignedId;
+    this.timer;
+    this.timeLastChecked;
+    this.entitiesByTag;
+    this.knownTags;
+    this.workInterval;
+    this.isPaused;
+    this.handlersByMessageType;
+    this.desiredFPS = 60;
 
-
-  function initialize() {
-    systems = [];
-    entitiesById = {};
-    entitiesByTag = {};
-    lastAssignedId = 0;
-    knownTags = [];
-    handlersByMessageType = {};
+    this.systems = [];
+    this.entitiesById = {};
+    this.entitiesByTag = {};
+    this.lastAssignedId = 0;
+    this.knownTags = {};
+    this.handlersByMessageType = {};
   }
 
-  function addEntity(entity) {
-    if (!entity || isTracked(entity)) {
+  addEntity(entity) {
+    if (!entity || this.isTracked(entity)) {
       return;
     }
 
     if (!entity.getId()) {
-      entity.setId(generateId());
+      entity.setId(this.generateId());
     }
 
-    entitiesById[entity.getId()] = entity;
-    updateTags(entity);
+    this.entitiesById[entity.getId()] = entity;
+    this.updateTags(entity);
   }
 
-  function isTracked(entity) {
-    return entity && entity.getId() && entitiesById[entity.getId()];
+  isTracked(entity) {
+    return entity && entity.getId() && this.entitiesById[entity.getId()];
   }
 
-  function generateId() {
-    return ++lastAssignedId;
+  generateId() {
+    return ++this.lastAssignedId;
   }
 
-  function updateTags(entity) {
+  updateTags(entity) {
     if (!entity) {
       return;
     }
+    console.info(this.knownTags);
 
-    var tagTypes = Object.keys(knownTags);
-    var tags = tagTypes.map(function(tagType) {
-      return knownTags[tagType];
+    this.tagTypes = Object.keys(this.knownTags);
+    let tags = this.tagTypes.map((tagType) => {
+      return this.knownTags[tagType];
     });
 
 
-    for (var index = 0; index < tags.length; index++) {
-      var tag = tags[index];
+    for (let index = 0; index < tags.length; index++) {
+      let tag = tags[index];
       if (tag.isAssignableTo(entity)) {
-        assignTag(entity, tag);
+        this.assignTag(entity, tag);
       }
       else {
-        unassignTag(entity, tag);
+        this.unassignTag(entity, tag);
       }
     }
   }
 
-  function assignTag(entity, tag) {
-    var entities = entitiesByTag[tag.getTagType()];
+  assignTag(entity, tag) {
+    let entities = this.entitiesByTag[tag.getTagType()];
     if (!entities) {
-      entitiesByTag[tag.getTagType()] = [];
-      entities = entitiesByTag[tag.getTagType()];
+      this.entitiesByTag[tag.getTagType()] = [];
+      entities = this.entitiesByTag[tag.getTagType()];
     }
-    var isAlreadyAssigned = false;
-    for (var index = 0; index < entities.length; index++) {
+    let isAlreadyAssigned = false;
+    for (let index = 0; index < entities.length; index++) {
       if (entities[index].getId() === entity.getId()) {
         isAlreadyAssigned = true;
         break;
@@ -83,134 +83,122 @@ function Core() {
     }
   }
 
-  function unassignTag(entity, tag) {
-    var entities = entitiesByTag[tag.getTagType()];
+  unassignTag(entity, tag) {
+    this.entities = this.entitiesByTag[tag.getTagType()];
     if (!entities) {
       return;
     }
 
-    for (var index = 0; index < entities.length; index++) {
-      if (entities[index].getId() === entity.getId()) {
+    for (let index = 0; index < this.entities.length; index++) {
+      if (this.entities[index].getId() === entity.getId()) {
         entityIndex = index;
       }
     }
 
     if (entityIndex) {
-      entities.splice(entityIndex, 1);
+      this.entities.splice(entityIndex, 1);
     }
   }
 
-  function removeEntity(entity) {
+  removeEntity(entity) {
     if (!entity) {
       return;
     }
     entity.removeAllComponents();
-    updateTags(entity);
-    entitiesById[entity.getId()] = undefined;
+    this.updateTags(entity);
+    this.entitiesById[entity.getId()] = undefined;
   }
 
-  function addSystem(system) {
-    systems.push(system);
+  addSystem(system) {
+    this.systems.push(system);
   }
 
-  function removeSystem(system) {
-    systems.splice(systems.indexOf(system), 1);
+  removeSystem(system) {
+    this.systems.splice(this.systems.indexOf(system), 1);
   }
 
-  function work() {
-    var t1 = performance.now();
-    updateTimer();
-    syncChangedEntities();
-    for (var i = 0; i < systems.length; i++) {
-      systems[i].work();
+  work() {
+    this.t1 = performance.now();
+    this.updateTimer();
+    this.syncChangedEntities();
+    for (let i = 0; i < this.systems.length; i++) {
+      this.systems[i].work();
     }
-    var t2 = performance.now();
+    this.t2 = performance.now();
   }
 
-  function syncChangedEntities() {
-    var ids = Object.keys(entitiesById);
-    var entities = ids.map(function(id) {
-      return entitiesById[id];
+  syncChangedEntities() {
+    let ids = Object.keys(this.entitiesById);
+    this.entities = ids.map((id) => {
+      return this.entitiesById[id];
     });
 
-    for (var index = 0; index < entities.length; index++) {
-      var entity = entities[index];
+    for (let index = 0; index < this.entities.length; index++) {
+      let entity = this.entities[index];
       if (entity.hasChanged()) {
-        updateTags(entity);
+        this.updateTags(entity);
         entity.markChanged(false);
       }
     }
   }
 
-  function getTag(tagType) {
-    return knownTags[tagType];
+  getTag(tagType) {
+    return this.knownTags[tagType];
   }
 
-  function now() {
+  now() {
     return timer / 1000000;
   }
 
-  function updateTimer() {
-    var now = performance.now();
-    if (!isPaused) {
-      var timePassed =  now - timeLastChecked;
-      timer += timePassed;
+  updateTimer() {
+    this.now = performance.now();
+    if (!this.isPaused) {
+      this.timePassed =  this.now - this.timeLastChecked;
+      this.timer += this.timePassed;
     }
-    timeLastChecked = now;
+    this.timeLastChecked = this.now;
   }
 
-  function start() {
-    window.setTimeout(function() {
-      work();
-      start();
-    }, 1000 / desiredFPS);
+  start() {
+    window.setTimeout(() => {
+      this.work();
+      this.start();
+    }, 1000 / this.desiredFPS);
   }
 
-  function stop() {
-    clearInterval(workInterval);
+  stop() {
+    clearInterval(this.workInterval);
   }
 
-  function getTaggedAs(tag) {
-    return entitiesByTag[tag] || [];
+  getTaggedAs(tag) {
+    return this.entitiesByTag[tag] || [];
   }
 
-  function addTag(tag) {
-    if (tag && !knownTags[tag.getTagType()]) {
-      knownTags[tag.getTagType()] = tag;
+  addTag(tag) {
+    if (tag && !this.knownTags[tag.getTagType()]) {
+      this.knownTags[tag.getTagType()] = tag;
     }
   }
 
-  function send(messageType, payload) {
-    var handlersForMessage = handlersByMessageType[messageType];
+  send(messageType, payload) {
+    let handlersForMessage = this.handlersByMessageType[messageType];
     if (handlersForMessage) {
-      for (var index = 0; index < handlersForMessage.length; index++) {
+      for (let index = 0; index < handlersForMessage.length; index++) {
         handlersForMessage[index](payload);
       }
     }
   }
 
-  function addHandler(messageType, handler) {
-    var handlersForMessage = handlersByMessageType[messageType];
+  addHandler(messageType, handler) {
+    let handlersForMessage = this.handlersByMessageType[messageType];
     if (!handlersForMessage) {
-      handlersByMessageType[messageType] = [];
-      handlersForMessage = handlersByMessageType[messageType];
+      this.handlersByMessageType[messageType] = [];
+      handlersForMessage = this.handlersByMessageType[messageType];
     }
     if (handlersForMessage.indexOf(handler) === -1) {
       handlersForMessage.push(handler);
     }
   }
-
-  initialize();
-
-  return {
-    addEntity: addEntity,
-    addSystem: addSystem,
-    addTag: addTag,
-    start: start,
-    stop: stop,
-    getTaggedAs: getTaggedAs,
-    getTag: getTag,
-    send: send,
-    addHandler: addHandler
-  };
 }
+
+export default new Core()

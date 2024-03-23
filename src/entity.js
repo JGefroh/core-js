@@ -1,49 +1,41 @@
-function Entity() {
-  var componentsByType = {};
-  var dirty;
-  var id;
-  function getComponent(componentType) {
-    return componentsByType[componentType];
+export default class Entity {
+  constructor() {
+    this.componentsByType = {}
+    this.dirty = false;
+    this.id = null;
   }
 
-  function hasChanged() {
-    return dirty;
+  getComponent(componentType) {
+    return this.componentsByType[componentType];
   }
 
-  function markChanged(isDirty) {
-    dirty = isDirty;
+  hasChanged() {
+    return this.dirty;
   }
 
-  function setId(newId) {
-    id = newId;
+  markChanged(isDirty) {
+    this.dirty = isDirty;
   }
 
-  function getId() {
-    return id;
+  setId(newId) {
+    this.id = newId;
   }
 
-  function hasComponent(componentType) {
-    return componentsByType[componentType];
+  getId() {
+    return this.id;
   }
 
-  function addComponent(component) {
-    componentsByType[component.getComponentType()] = component;
-    markChanged(true);
+  hasComponent(componentType) {
+    return this.componentsByType[componentType];
   }
 
-  function removeComponent(component) {
-    componentsByType[component.getComponentType()] = undefined;
-    markChanged(true);
+  addComponent(component) {
+    this.componentsByType[component.getComponentType()] = component;
+    this.markChanged(true);
   }
 
-  return {
-    getComponent: getComponent,
-    hasChanged: hasChanged,
-    setId: setId,
-    getId: getId,
-    add: addComponent,
-    remove: removeComponent,
-    has: hasComponent,
-    markChanged: markChanged
-  };
+  removeComponent(component) {
+    this.componentsByType[component.getComponentType()] = undefined;
+    this.markChanged(true);
+  }
 }
