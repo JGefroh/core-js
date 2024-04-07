@@ -1,23 +1,6 @@
 class Core {
   constructor() {
-    this.systems;
-    this.entitiesById;
-    this.lastAssignedId;
-    this.timer;
-    this.timeLastChecked;
-    this.entitiesByTag;
-    this.knownTags;
-    this.workInterval;
-    this.isPaused;
-    this.handlersByMessageType;
-    this.desiredFPS = 60;
-
-    this.systems = [];
-    this.entitiesById = {};
-    this.entitiesByTag = {};
-    this.lastAssignedId = 0;
-    this.knownTags = {};
-    this.handlersByMessageType = {};
+    this.clear();
   }
 
   addEntity(entity) {
@@ -30,7 +13,9 @@ class Core {
     }
 
     this.entitiesById[entity.getId()] = entity;
+    this.entitiesByKey[entity.getKey()] = entity;
     this.updateTags(entity);
+    this.send("DEBUG_DATA", {type: 'entity_added', entity: entity})
   }
 
   isTracked(entity) {
@@ -41,11 +26,14 @@ class Core {
     return ++this.lastAssignedId;
   }
 
+  getEntityWithId(id) {
+    return this.entitiesById[id]
+  }
+
   updateTags(entity) {
     if (!entity) {
       return;
     }
-    console.info(this.knownTags);
 
     this.tagTypes = Object.keys(this.knownTags);
     let tags = this.tagTypes.map((tagType) => {
@@ -84,19 +72,26 @@ class Core {
   }
 
   unassignTag(entity, tag) {
-    this.entities = this.entitiesByTag[tag.getTagType()];
+    let entities = this.entitiesByTag[tag.getTagType()];
     if (!entities) {
       return;
     }
+    let entityIndex = null;
 
-    for (let index = 0; index < this.entities.length; index++) {
-      if (this.entities[index].getId() === entity.getId()) {
+    for (let index = 0; index < entities.length; index++) {
+      if (entities[index].getId() === entity.getId()) {
         entityIndex = index;
       }
     }
 
     if (entityIndex) {
-      this.entities.splice(entityIndex, 1);
+      entities.splice(entityIndex, 1);
+    }
+  }
+
+  markRemoveEntity(entityId) {
+    if (this.entitiesById[entityId]) {
+      this.entitiesById[entityId].destroy = true;
     }
   }
 
@@ -104,13 +99,27 @@ class Core {
     if (!entity) {
       return;
     }
+
+    if (typeof entity === 'number' || typeof entity == 'string') {
+      entity = this.entitiesById[entity]
+    }
+    if (!entity) {
+      return;
+    }
+
     entity.removeAllComponents();
     this.updateTags(entity);
     this.entitiesById[entity.getId()] = undefined;
+    this.entitiesByKey[entity.getKey()] = undefined;
+    delete this.entitiesById[entity.getId()]
+    delete this.entitiesByKey[entity.getKey()]
+    this.syncChangedEntities();
+    entity.setId(null)
   }
 
   addSystem(system) {
     this.systems.push(system);
+    system.lastRanTimestamp = Date.now();
   }
 
   removeSystem(system) {
@@ -118,24 +127,46 @@ class Core {
   }
 
   work() {
+    this.tick++
     this.t1 = performance.now();
+    let slowestSystem = {system: 'Unknown', time: 0}
     this.updateTimer();
     this.syncChangedEntities();
     for (let i = 0; i < this.systems.length; i++) {
-      this.systems[i].work();
+      let t3 = performance.now()
+      let systemLastRanTimestamp = this.systems[i].lastRanTimestamp
+      let systemDesiredWaitTime = this.systems[i].wait
+      if (!systemLastRanTimestamp || !systemDesiredWaitTime || (Date.now() - systemLastRanTimestamp > systemDesiredWaitTime)) {
+        let skippedRun = this.systems[i].work();
+        if (!skippedRun) {
+          this.systems[i].postWork();
+        }
+        let t4 = performance.now()
+        if (t4 - t3 > slowestSystem.time) {
+          slowestSystem = {system: this.systems[i], time: t4-t3}
+        }
+      }
     }
     this.t2 = performance.now();
+    this.send("DEBUG_DATA", {type: 'timing', workTime: this.t2 - this.t1, slowestSystem: slowestSystem.system.constructor.name, slowestSystemTime: slowestSystem.time})
+    
+    
+    Object.keys(this.entitiesById).forEach((entityId) => {
+      if (this.entitiesById[entityId] && this.entitiesById[entityId].destroy) {
+        this.removeEntity(entityId)
+      }
+    });
   }
 
   syncChangedEntities() {
     let ids = Object.keys(this.entitiesById);
-    this.entities = ids.map((id) => {
+    let entities = ids.map((id) => {
       return this.entitiesById[id];
     });
 
-    for (let index = 0; index < this.entities.length; index++) {
-      let entity = this.entities[index];
-      if (entity.hasChanged()) {
+    for (let index = 0; index < entities.length; index++) {
+      let entity = entities[index];
+      if (entity && entity.hasChanged()) {
         this.updateTags(entity);
         entity.markChanged(false);
       }
@@ -143,7 +174,14 @@ class Core {
   }
 
   getTag(tagType) {
-    return this.knownTags[tagType];
+    let tag = this.knownTags[tagType]
+    if (tag) {
+      return new tag();
+    }
+    else {
+      console.warn(`Acces attempted for ${tagType}, not yet registered`)
+      return null;
+    }
   }
 
   now() {
@@ -174,6 +212,10 @@ class Core {
     return this.entitiesByTag[tag] || [];
   }
 
+  getKeyedAs(key) {
+    return this.entitiesByKey[key];
+  }
+
   addTag(tag) {
     if (tag && !this.knownTags[tag.getTagType()]) {
       this.knownTags[tag.getTagType()] = tag;
@@ -184,9 +226,22 @@ class Core {
     let handlersForMessage = this.handlersByMessageType[messageType];
     if (handlersForMessage) {
       for (let index = 0; index < handlersForMessage.length; index++) {
-        handlersForMessage[index](payload);
+        try {
+          handlersForMessage[index](payload);
+        }
+        catch(error) {
+          console.error(`Core.send | Error sending ${messageType} to ${handlersForMessage[index]} - ${error}.`)
+        }
       }
     }
+  }
+
+  publishData(dataKey, payload) {
+    this.publishedData[dataKey] = payload;
+  }
+
+  getData(dataKey) {
+    return this.publishedData[dataKey];
   }
 
   addHandler(messageType, handler) {
@@ -198,6 +253,34 @@ class Core {
     if (handlersForMessage.indexOf(handler) === -1) {
       handlersForMessage.push(handler);
     }
+  }
+
+  getTick() {
+    return this.tick;
+  }
+
+  clear() {
+    this.systems;
+    this.entitiesById;
+    this.lastAssignedId;
+    this.timer;
+    this.timeLastChecked;
+    this.entitiesByTag;
+    this.knownTags;
+    this.workInterval;
+    this.isPaused;
+    this.handlersByMessageType;
+    this.desiredFPS = 60;
+    this.tick = 0;
+
+    this.systems = [];
+    this.entitiesById = {};
+    this.entitiesByTag = {};
+    this.entitiesByKey = {};
+    this.lastAssignedId = 0;
+    this.knownTags = {};
+    this.handlersByMessageType = {};
+    this.publishedData = {}
   }
 }
 

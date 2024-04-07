@@ -1,8 +1,10 @@
 export default class Entity {
-  constructor() {
+  constructor(payload = {}) {
     this.componentsByType = {}
     this.dirty = false;
-    this.id = null;
+    this.id = payload.id;
+    this.key = payload.key;
+    this.destroy = false;
   }
 
   getComponent(componentType) {
@@ -25,6 +27,14 @@ export default class Entity {
     return this.id;
   }
 
+  getKey() {
+    return this.key;
+  }
+
+  listComponents() {
+    return Object.keys(this.componentsByType);
+  }
+
   hasComponent(componentType) {
     return this.componentsByType[componentType];
   }
@@ -34,8 +44,18 @@ export default class Entity {
     this.markChanged(true);
   }
 
-  removeComponent(component) {
-    this.componentsByType[component.getComponentType()] = undefined;
+  removeComponent(componentName) {
+    this.componentsByType[componentName] = undefined;
+    delete this.componentsByType[componentName]
     this.markChanged(true);
+  }
+
+  removeAllComponents() {
+    this.componentsByType = {};
+    this.markChanged(true);
+  }
+
+  markDestroy() {
+    this.destroy = true;
   }
 }

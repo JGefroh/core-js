@@ -5,21 +5,25 @@ export default class Tag {
     this.tagType;
   }
   getId() {
-    return this.id;
-  };
+    return this.entity.id;
+  }
 
-  setId(id) {
-    this.id = id;
-  };
+  setId(id) { 
+    this.entity.id = id;
+  }
 
-  isAssignableTo(entity) {
-  };
+  static isAssignableTo(entity) {
+  }
 
   setEntity(entity) {
     this.entity = entity;
-  };
+  }
 
-  getTagType() {
+  getEntity() {
+    return this.entity;
+  }
+
+  static getTagType() {
     return this.tagType;
-  };
+  }
 }
