@@ -36,7 +36,7 @@ export default class System {
 
   forKeyedAs(key, callback) {
     var entity = this._core.getKeyedAs(key);
-    if (entity.key) {
+    if (entity?.key) {
         callback(entity);
     }
 };
