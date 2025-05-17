@@ -1,6 +1,7 @@
 class Core {
   constructor() {
     this.clear();
+    window.jgefrohCore = this;
   }
 
   addEntity(entity) {
@@ -12,6 +13,7 @@ class Core {
       entity.setId(this.generateId());
     }
 
+    this.entities.push(entity)
     this.entitiesById[entity.getId()] = entity;
     this.entitiesByKey[entity.getKey()] = entity;
     this.updateTags(entity);
@@ -30,63 +32,32 @@ class Core {
     return this.entitiesById[id]
   }
 
+  getEntityWithKey(key) {
+    return this.entitiesByKey[key]
+  }
+
   updateTags(entity) {
     if (!entity) {
       return;
     }
-
-    this.tagTypes = Object.keys(this.knownTags);
-    let tags = this.tagTypes.map((tagType) => {
-      return this.knownTags[tagType];
-    });
-
-
-    for (let index = 0; index < tags.length; index++) {
-      let tag = tags[index];
+ 
+    for (const tag of Object.values(this.knownTags)) {
       if (tag.isAssignableTo(entity)) {
         this.assignTag(entity, tag);
-      }
-      else {
+      } else {
         this.unassignTag(entity, tag);
       }
     }
   }
 
   assignTag(entity, tag) {
-    let entities = this.entitiesByTag[tag.getTagType()];
-    if (!entities) {
-      this.entitiesByTag[tag.getTagType()] = [];
-      entities = this.entitiesByTag[tag.getTagType()];
-    }
-    let isAlreadyAssigned = false;
-    for (let index = 0; index < entities.length; index++) {
-      if (entities[index].getId() === entity.getId()) {
-        isAlreadyAssigned = true;
-        break;
-      }
-    }
-
-    if (!isAlreadyAssigned) {
-      entities.push(entity);
-    }
+    let entities = this.entitiesByTag[tag.getTagType()] ||= new Set();
+    entities.add(entity);
   }
 
   unassignTag(entity, tag) {
-    let entities = this.entitiesByTag[tag.getTagType()];
-    if (!entities) {
-      return;
-    }
-    let entityIndex = null;
-
-    for (let index = 0; index < entities.length; index++) {
-      if (entities[index].getId() === entity.getId()) {
-        entityIndex = index;
-      }
-    }
-
-    if (entityIndex) {
-      entities.splice(entityIndex, 1);
-    }
+    let entities = this.entitiesByTag[tag.getTagType()] ||= new Set();
+    entities.delete(entity);
   }
 
   markRemoveEntity(entityId) {
@@ -109,17 +80,18 @@ class Core {
 
     entity.removeAllComponents();
     this.updateTags(entity);
-    this.entitiesById[entity.getId()] = undefined;
-    this.entitiesByKey[entity.getKey()] = undefined;
     delete this.entitiesById[entity.getId()]
     delete this.entitiesByKey[entity.getKey()]
-    this.syncChangedEntities();
+    const i = this.entities.indexOf(entity);
+    if (i !== -1) this.entities.splice(i, 1);
+    this.syncChanged(entity);
     entity.setId(null)
   }
 
   addSystem(system) {
     this.systems.push(system);
     system.lastRanTimestamp = Date.now();
+    system.initialize();
   }
 
   removeSystem(system) {
@@ -131,7 +103,7 @@ class Core {
     this.t1 = performance.now();
     let slowestSystem = {system: 'Unknown', time: 0}
     this.updateTimer();
-    this.syncChangedEntities();
+    this.syncChanged();
     for (let i = 0; i < this.systems.length; i++) {
       let t3 = performance.now()
       let systemLastRanTimestamp = this.systems[i].lastRanTimestamp
@@ -148,27 +120,28 @@ class Core {
       }
     }
     this.t2 = performance.now();
-    this.send("DEBUG_DATA", {type: 'timing', workTime: this.t2 - this.t1, slowestSystem: slowestSystem.system.constructor.name, slowestSystemTime: slowestSystem.time})
+    this.send("DEBUG_DATA", {type: 'timing', workTime: this.t2 - this.t1, slowestSystem: slowestSystem.system.constructor.name, slowestSystemTime: slowestSystem.time, lastAssignedId: this.lastAssignedId})
     
-    
-    Object.keys(this.entitiesById).forEach((entityId) => {
-      if (this.entitiesById[entityId] && this.entitiesById[entityId].destroy) {
-        this.removeEntity(entityId)
+    this.entities.forEach((entity) => {
+      if (entity.destroy) {
+        this.removeEntity(entity)
       }
     });
   }
 
-  syncChangedEntities() {
-    let ids = Object.keys(this.entitiesById);
-    let entities = ids.map((id) => {
-      return this.entitiesById[id];
-    });
-
-    for (let index = 0; index < entities.length; index++) {
-      let entity = entities[index];
-      if (entity && entity.hasChanged()) {
-        this.updateTags(entity);
-        entity.markChanged(false);
+  syncChanged(entity = null) {
+    if (entity && entity.hasChanged()) {
+      this.updateTags(entity);
+      entity.markChanged(false);
+      return;
+    }
+    else {
+      for (let index = 0; index < this.entities.length; index++) {
+        let entity = this.entities[index];
+        if (entity && entity.hasChanged()) {
+          this.updateTags(entity);
+          entity.markChanged(false);
+        }
       }
     }
   }
@@ -185,7 +158,7 @@ class Core {
   }
 
   now() {
-    return timer / 1000000;
+    return this.timer / 1000000;
   }
 
   updateTimer() {
@@ -198,9 +171,8 @@ class Core {
   }
 
   start() {
-    window.setTimeout(() => {
+    this.workInterval = window.setInterval(() => {
       this.work();
-      this.start();
     }, 1000 / this.desiredFPS);
   }
 
@@ -209,7 +181,7 @@ class Core {
   }
 
   getTaggedAs(tag) {
-    return this.entitiesByTag[tag] || [];
+    return Array.from(this.entitiesByTag[tag] || []);
   }
 
   getKeyedAs(key) {
@@ -230,7 +202,7 @@ class Core {
           handlersForMessage[index](payload);
         }
         catch(error) {
-          console.error(`Core.send | Error sending ${messageType} to ${handlersForMessage[index]} - ${error}.`)
+          console.error(`Core.send | Error sending ${messageType} to ${handlersForMessage[index]} - ${error} ${error.stack}.`)
         }
       }
     }
@@ -260,20 +232,15 @@ class Core {
   }
 
   clear() {
-    this.systems;
-    this.entitiesById;
-    this.lastAssignedId;
-    this.timer;
-    this.timeLastChecked;
-    this.entitiesByTag;
-    this.knownTags;
-    this.workInterval;
-    this.isPaused;
-    this.handlersByMessageType;
+    this.timer = 0;
+    this.timeLastChecked = null;
+    this.workInterval = null;
+    this.isPaused = false;
     this.desiredFPS = 60;
     this.tick = 0;
 
     this.systems = [];
+    this.entities = [];
     this.entitiesById = {};
     this.entitiesByTag = {};
     this.entitiesByKey = {};

@@ -8,6 +8,8 @@ export default class System {
     this.lastRanTimestamp = null;
     this.lastRanTick = 0;
   }
+
+  initialize() {}
   
   start() {
     isStarted = true;
@@ -70,7 +72,7 @@ export default class System {
   workForEntityWithTag(entityId, tagName, callback) {
     let tag = this.getTag(tagName);
     let entity = this._core.getEntityWithId(entityId)
-    if (!entity || !tag) {
+    if (!entity || !tag || !tag.constructor.isAssignableTo(entity)) {
       return;
     }
     tag.setEntity(entity);
