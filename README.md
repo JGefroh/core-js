@@ -7,6 +7,9 @@ Games run in a loop many time a second. In fact, if you’re trying to run a gam
 
 I built Core so that I could manage all of the pieces of all of the things I wanted to do in a centralized, consistent manner.
 
+## core-gdk
+[core-gdk](https://github.com/jgefroh/core-gdk) contains pre-built logic and systems that I have used with `core-js`
+
 ---
 
 # Games I made with Core:
