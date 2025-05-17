@@ -16,6 +16,13 @@ I built Core so that I could manage all of the pieces of all of the things I wan
 
 <img width="2010" alt="Screenshot 2024-04-19 at 7 13 18 PM" src="https://github.com/JGefroh/core-js/assets/1077095/16ec6674-0c48-4a1a-870e-9313c4a96aeb">
 
+# Light
+[Source code](https://github.com/JGefroh/core-light) | [Demo](http://light.jgefroh.com/)
+
+![screenshot-1](https://github.com/user-attachments/assets/44818268-5f4b-4785-bfc9-a3086bc13c27)
+
+
+
 ----
 # The major parts
 
