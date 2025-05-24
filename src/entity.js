@@ -4,7 +4,9 @@ export default class Entity {
     this.dirty = false;
     this.id = payload.id;
     this.key = payload.key;
+    this.type = payload.type;
     this.destroy = false;
+    this.labels = payload.labels || {}; // Labels are simple non-data text tags for when you don't need the overhead of a Component
   }
 
   getComponent(componentType) {
@@ -29,6 +31,14 @@ export default class Entity {
 
   getKey() {
     return this.key;
+  }
+
+  getType() {
+    return this.type;
+  }
+
+  setType(type) {
+    this.type = type;
   }
 
   listComponents() {
@@ -57,5 +67,18 @@ export default class Entity {
 
   markDestroy() {
     this.destroy = true;
+  }
+
+  hasLabel(label) {
+    return this.labels[label];
+  }
+
+  addLabel(label) {
+    this.labels[label] = true;
+    this.markChanged(true)
+  }
+
+  removeLabel(label) {
+    delete this.labels[label]
   }
 }

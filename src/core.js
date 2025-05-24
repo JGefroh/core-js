@@ -17,7 +17,7 @@ class Core {
     this.entitiesById[entity.getId()] = entity;
     this.entitiesByKey[entity.getKey()] = entity;
     this.updateTags(entity);
-    this.send("DEBUG_DATA", {type: 'entity_added', entity: entity})
+    this.send("CORE_ENTITY_CREATED", {type: entity.type, entity: entity})
   }
 
   isTracked(entity) {
@@ -234,10 +234,11 @@ class Core {
   clear() {
     this.timer = 0;
     this.timeLastChecked = null;
-    this.workInterval = null;
+    this.workInterval = this.workInterval ? clearInterval(this.workInterval) : null;
     this.isPaused = false;
     this.desiredFPS = 60;
     this.tick = 0;
+    this.now = Date.now();
 
     this.systems = [];
     this.entities = [];
