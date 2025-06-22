@@ -24,6 +24,10 @@ I built Core so that I could manage all of the pieces of all of the things I wan
 
 ![screenshot-1](https://github.com/user-attachments/assets/44818268-5f4b-4785-bfc9-a3086bc13c27)
 
+# Tactics
+[Source code](https://github.com/JGefroh/core-tactics) | [Demo](http://tactics.jgefroh.com/)
+
+![Screenshot 2025-06-21 at 8 41 08 PM](https://github.com/user-attachments/assets/a181f735-9e91-40f4-a310-e7b67b4e3e89)
 
 
 ----
